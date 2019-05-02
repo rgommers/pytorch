@@ -168,7 +168,7 @@ __device__ __forceinline__ static scalar_t upsampling_get_value_bounded(
 
 template <typename scalar_t, typename accscalar_t>
 __device__ __forceinline__ static void upsampling_increment_value_bounded(
-    const PackedTensorAccessor<scalar_t, 4> data,
+    PackedTensorAccessor<scalar_t, 4> data,
     int64_t channel,
     int64_t batch,
     int64_t width,
@@ -179,7 +179,7 @@ __device__ __forceinline__ static void upsampling_increment_value_bounded(
   int64_t access_x = std::max(std::min(x, width - 1), static_cast<int64_t>(0));
   int64_t access_y = std::max(std::min(y, height - 1), static_cast<int64_t>(0));
   atomicAdd(
-      &(data[batch][channel][access_y][access_x]),
+      &data[batch][channel][access_y][access_x],
       static_cast<scalar_t>(value));
 }
 
