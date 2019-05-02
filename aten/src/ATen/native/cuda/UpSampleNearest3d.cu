@@ -284,7 +284,7 @@ Tensor& upsample_nearest3d_out_cuda(
 }
 
 Tensor upsample_nearest3d_cuda(const Tensor& input, IntArrayRef output_size) {
-  tensor output = at::empty({0}, input.options());
+  Tensor output = at::empty({0}, input.options());
   upsample_nearest3d_out_cuda_template(output, input, output_size);
   return output;
 }
