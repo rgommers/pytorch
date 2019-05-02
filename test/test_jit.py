@@ -2360,6 +2360,56 @@ graph(%a, %b, %c, %d):
         does_decompose()
         doesnt_decompose()
 
+    def test_decompose_linear(self):
+        def decompose_to_addmm():
+            @torch.jit.script
+            def linear_addmm(input, weight, bias):
+                return F.linear(input, weight, bias)
+
+            input = torch.randn(2, 4)
+            weight = torch.randn(2, 4)
+            bias = torch.randn(2, 2)
+
+            self.assertTrue('aten::linear(' in str(linear_addmm.graph))
+            out_ref = linear_addmm(input, weight, bias)
+            torch._C._jit_pass_complete_shape_analysis(
+                linear_addmm.graph, (input, weight, bias), False)
+            self.run_pass('decompose_ops', linear_addmm.graph)
+            out_test = linear_addmm(input, weight, bias)
+            self.assertEqual(out_ref, out_test)
+            FileCheck().check_not("linear").check_not("addmm") \
+                .check("mm").check("add").run(str(linear_addmm.graph))
+
+        def decompose_to_matmul():
+            @torch.jit.script
+            def linear_matmul(input, weight):
+                return F.linear(input, weight)
+
+            input = torch.randn(2, 4)
+            weight = torch.randn(2, 4)
+
+            self.assertTrue('aten::linear(' in str(linear_matmul.graph))
+            out_ref = linear_matmul(input, weight)
+            torch._C._jit_pass_complete_shape_analysis(
+                linear_matmul.graph, (input, weight), False)
+            self.run_pass('decompose_ops', linear_matmul.graph)
+            out_test = linear_matmul(input, weight)
+            self.assertEqual(out_ref, out_test)
+            FileCheck().check_not("linear").check("matmul").check("add_").run(str(linear_matmul.graph))
+
+        def doesnt_decompose():
+            @torch.jit.script
+            def linear(input, weight, bias):
+                return F.linear(input, weight, bias)
+
+            orig = str(linear.graph)
+            self.run_pass('decompose_ops', linear.graph)
+            self.assertTrue(orig == str(linear.graph))
+
+        decompose_to_addmm()
+        decompose_to_matmul()
+        doesnt_decompose()
+
     def test_index_put(self):
         ten = torch.zeros(3, 3)
         mask = torch.Tensor([[True, True, True],
