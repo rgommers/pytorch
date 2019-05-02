@@ -8,12 +8,12 @@ namespace at {
 namespace native {
 
 /* TODO: move this to a common place */
-template <scalar_t>
+template <typename scalar_t>
 __device__ inline scalar_t min(a, b) {
   return ((a) < (b)) ? (a) : (b);
 }
 
-template <scalar_t>
+template <typename scalar_t>
 __device__ inline scalar_t max(a, b) {
   return ((a) > (b)) ? (a) : (b);
 }
