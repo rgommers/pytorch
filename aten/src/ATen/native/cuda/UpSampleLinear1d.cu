@@ -136,9 +136,6 @@ static void upsample_linear1d_out_cuda_template(
   output.resize_({input.size(0), input.size(1), output_width});
   output.zero_();
 
-  auto idata = input.packed_accessor<scalar_t, 3>();
-  auto odata = output.packed_accessor<scalar_t, 3>();
-
   AT_ASSERT(input_width > 0 && output_width > 0);
 
   const accscalar_t rwidth = area_pixel_compute_scale<accscalar_t>(
@@ -151,6 +148,9 @@ static void upsample_linear1d_out_cuda_template(
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       input.scalar_type(), "upsample_linear1d_out_frame", [&] {
         using accscalar_t = at::acc_type<scalar_t, true>;
+
+        auto idata = input.packed_accessor<scalar_t, 3>();
+        auto odata = output.packed_accessor<scalar_t, 3>();
 
         upsample_linear1d_out_frame<scalar_t, accscalar_t>
             <<<(num_kernels + num_threads - 1) / num_threads,
@@ -200,9 +200,6 @@ static void upsample_linear1d_backward_out_cuda_template(
   grad_input.resize_({nbatch, channels, input_width});
   grad_input.zero_();
 
-  auto idata = grad_input.packed_accessor<scalar_t, 3>();
-  auto odata = grad_output.packed_accessor<scalar_t, 3>();
-
   const int64_t num_kernels = output_width;
   const int64_t num_threads =
       at::cuda::getCurrentDeviceProperties()->maxThreadsPerBlock;
@@ -211,6 +208,9 @@ static void upsample_linear1d_backward_out_cuda_template(
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       grad_output.scalar_type(), "upsample_linear1d_out_frame_backward", [&] {
         using accscalar_t = at::acc_type<scalar_t, true>;
+
+        auto idata = grad_input.packed_accessor<scalar_t, 3>();
+        auto odata = grad_output.packed_accessor<scalar_t, 3>();
 
         const accscalar_t rwidth = area_pixel_compute_scale<accscalar_t>(
             input_width, output_width, align_corners);
