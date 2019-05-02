@@ -119,7 +119,6 @@ static void upsample_nearest2d_out_cuda_template(
     const Tensor& input,
     IntArrayRef output_size) {
   TensorArg input_arg{input, "input", 1}, output_arg{output, "output", 2};
-
   checkAllSameGPU(
       "upsample_nearest2d_out_cuda_template", {input_arg, output_arg});
 
@@ -185,7 +184,6 @@ static void upsample_nearest2d_backward_out_cuda_template(
     IntArrayRef input_size) {
   TensorArg grad_input_arg{grad_input, "grad_input", 1},
       grad_output_arg{grad_output_, "grad_output_", 2};
-
   checkAllSameGPU(
       "upsample_nearest2d_backward_out_cuda",
       {grad_output_arg, grad_input_arg});

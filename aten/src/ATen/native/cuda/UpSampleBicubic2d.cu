@@ -168,7 +168,6 @@ static void upsample_bicubic2d_out_cuda_template(
     IntArrayRef output_size,
     bool align_corners) {
   TensorArg input_arg{input, "input", 1}, output_arg{output, "output", 2};
-
   checkAllSameGPU("upsample_bicubic2d_out", {input_arg, output_arg});
 
   AT_CHECK(
@@ -248,7 +247,6 @@ static void upsample_bicubic2d_backward_out_cuda_template(
     bool align_corners) {
   TensorArg grad_input_arg{grad_input, "grad_input", 1},
       grad_output_arg{grad_output_, "grad_output_", 2};
-
   checkAllSameGPU(
       "upsample_bicubic2d_backward_out_cuda",
       {grad_output_arg, grad_input_arg});
