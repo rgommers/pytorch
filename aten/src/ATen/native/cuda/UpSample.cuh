@@ -9,12 +9,12 @@ namespace native {
 
 /* TODO: move this to a common place */
 template <typename scalar_t>
-__device__ inline scalar_t min(a, b) {
+__device__ inline scalar_t min(scalar_t a, scalar_t b) {
   return ((a) < (b)) ? (a) : (b);
 }
 
 template <typename scalar_t>
-__device__ inline scalar_t max(a, b) {
+__device__ inline scalar_t max(scalar_t a, scalar_t b) {
   return ((a) > (b)) ? (a) : (b);
 }
 
@@ -189,8 +189,10 @@ __device__ __forceinline__ static void upsampling_increment_value_bounded(
     int64_t x,
     int64_t y,
     accscalar_t value) {
-  int64_t access_x = max<int64_t>(min<int64_t>(x, width - 1), static_cast<int64_t>(0));
-  int64_t access_y = max<int64_t>(min<int64_t>(y, height - 1), static_cast<int64_t>(0));
+  int64_t access_x =
+      max<int64_t>(min<int64_t>(x, width - 1), static_cast<int64_t>(0));
+  int64_t access_y =
+      max<int64_t>(min<int64_t>(y, height - 1), static_cast<int64_t>(0));
   atomicAdd(
       &data[batch][channel][access_y][access_x], static_cast<scalar_t>(value));
 }
