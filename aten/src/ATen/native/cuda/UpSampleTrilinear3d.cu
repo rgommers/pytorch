@@ -53,22 +53,22 @@ __global__ void upsample_trilinear3d_out_frame(
       return;
     }
     //
-    const accscalar_t t1r = linear_upsampling_compute_source_index<accscalar_t>(
-        rdepth, t2, align_corners);
+    const accscalar_t t1r = area_pixel_compute_source_index<accscalar_t>(
+        rdepth, t2, align_corners, /*cubic=*/false);
     const int64_t t1 = t1r;
     const int64_t t1p = (t1 < depth1 - 1) ? 1 : 0;
     const accscalar_t t1lambda = t1r - t1;
     const accscalar_t t0lambda = static_cast<accscalar_t>(1) - t1lambda;
     //
-    const accscalar_t h1r = linear_upsampling_compute_source_index<accscalar_t>(
-        rheight, h2, align_corners);
+    const accscalar_t h1r = area_pixel_compute_source_index<accscalar_t>(
+        rheight, h2, align_corners, /*cubic=*/false);
     const int64_t h1 = h1r;
     const int64_t h1p = (h1 < height1 - 1) ? 1 : 0;
     const accscalar_t h1lambda = h1r - h1;
     const accscalar_t h0lambda = static_cast<accscalar_t>(1) - h1lambda;
     //
-    const accscalar_t w1r = linear_upsampling_compute_source_index<accscalar_t>(
-        rwidth, w2, align_corners);
+    const accscalar_t w1r = area_pixel_compute_source_index<accscalar_t>(
+        rwidth, w2, align_corners, /*cubic=*/false);
     const int64_t w1 = w1r;
     const int64_t w1p = (w1 < width1 - 1) ? 1 : 0;
     const accscalar_t w1lambda = w1r - w1;
@@ -137,22 +137,22 @@ __global__ void upsample_trilinear3d_backward_out_frame(
       return;
     }
     //
-    const accscalar_t t1r = linear_upsampling_compute_source_index<accscalar_t>(
-        rdepth, t2, align_corners);
+    const accscalar_t t1r = area_pixel_compute_source_index<accscalar_t>(
+        rdepth, t2, align_corners, /*cubic=*/false);
     const int64_t t1 = t1r;
     const int64_t t1p = (t1 < depth1 - 1) ? 1 : 0;
     const accscalar_t t1lambda = t1r - t1;
     const accscalar_t t0lambda = static_cast<accscalar_t>(1) - t1lambda;
     //
-    const accscalar_t h1r = linear_upsampling_compute_source_index<accscalar_t>(
-        rheight, h2, align_corners);
+    const accscalar_t h1r = area_pixel_compute_source_index<accscalar_t>(
+        rheight, h2, align_corners, /*cubic=*/false);
     const int64_t h1 = h1r;
     const int64_t h1p = (h1 < height1 - 1) ? 1 : 0;
     const accscalar_t h1lambda = h1r - h1;
     const accscalar_t h0lambda = static_cast<accscalar_t>(1) - h1lambda;
     //
-    const accscalar_t w1r = linear_upsampling_compute_source_index<accscalar_t>(
-        rwidth, w2, align_corners);
+    const accscalar_t w1r = area_pixel_compute_source_index<accscalar_t>(
+        rwidth, w2, align_corners, /*cubic=*/false);
     const int64_t w1 = w1r;
     const int64_t w1p = (w1 < width1 - 1) ? 1 : 0;
     const accscalar_t w1lambda = w1r - w1;
@@ -249,12 +249,11 @@ static void upsample_trilinear3d_out_cuda_template(
         auto idata = input.packed_accessor<scalar_t, 5>();
         auto odata = output.packed_accessor<scalar_t, 5>();
 
-        const accscalar_t rdepth = linear_upsampling_compute_scale<accscalar_t>(
+        const accscalar_t rdepth = area_pixel_compute_scale<accscalar_t>(
             input_depth, output_depth, align_corners);
-        const accscalar_t rheight =
-            linear_upsampling_compute_scale<accscalar_t>(
-                input_height, output_height, align_corners);
-        const accscalar_t rwidth = linear_upsampling_compute_scale<accscalar_t>(
+        const accscalar_t rheight = area_pixel_compute_scale<accscalar_t>(
+            input_height, output_height, align_corners);
+        const accscalar_t rwidth = area_pixel_compute_scale<accscalar_t>(
             input_width, output_width, align_corners);
 
         upsample_trilinear3d_out_frame<scalar_t, accscalar_t>
@@ -341,12 +340,11 @@ static void upsample_trilinear3d_backward_out_cuda_template(
         auto idata = grad_input.packed_accessor<scalar_t, 5>();
         auto odata = grad_output.packed_accessor<scalar_t, 5>();
 
-        const accscalar_t rdepth = linear_upsampling_compute_scale<accscalar_t>(
+        const accscalar_t rdepth = area_pixel_compute_scale<accscalar_t>(
             input_depth, output_depth, align_corners);
-        const accscalar_t rheight =
-            linear_upsampling_compute_scale<accscalar_t>(
-                input_height, output_height, align_corners);
-        const accscalar_t rwidth = linear_upsampling_compute_scale<accscalar_t>(
+        const accscalar_t rheight = area_pixel_compute_scale<accscalar_t>(
+            input_height, output_height, align_corners);
+        const accscalar_t rwidth = area_pixel_compute_scale<accscalar_t>(
             input_width, output_width, align_corners);
 
         upsample_trilinear3d_backward_out_frame<scalar_t, accscalar_t>

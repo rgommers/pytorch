@@ -44,8 +44,8 @@ __global__ void upsample_linear1d_out_frame(
       return;
     }
     //
-    const accscalar_t w1r = linear_upsampling_compute_source_index<accscalar_t>(
-        rwidth, w2, align_corners);
+    const accscalar_t w1r = area_pixel_compute_source_index<accscalar_t>(
+        rwidth, w2, align_corners, /*cubic=*/false);
     const int64_t w1 = w1r;
     const int64_t w1p = (w1 < width1 - 1) ? 1 : 0;
     const accscalar_t w1lambda = w1r - w1;
@@ -93,8 +93,8 @@ __global__ void upsample_linear1d_out_frame_backward(
       return;
     }
     //
-    const accscalar_t w1r = linear_upsampling_compute_source_index<accscalar_t>(
-        rwidth, w2, align_corners);
+    const accscalar_t w1r = area_pixel_compute_source_index<accscalar_t>(
+        rwidth, w2, align_corners, /*cubic=*/false);
     const int64_t w1 = w1r;
     const int64_t w1p = (w1 < width1 - 1) ? 1 : 0;
     const accscalar_t w1lambda = w1r - w1;
@@ -140,7 +140,7 @@ static void upsample_linear1d_out_cuda_template(
 
   AT_ASSERT(input_width > 0 && output_width > 0);
 
-  const accscalar_t rwidth = linear_upsampling_compute_scale<accscalar_t>(
+  const accscalar_t rwidth = area_pixel_compute_scale<accscalar_t>(
       input_width, output_width, align_corners);
   const int64_t num_kernels = output_width;
   const int64_t num_threads =
@@ -209,7 +209,7 @@ static void upsample_linear1d_backward_out_cuda_template(
       grad_output.scalar_type(), "upsample_linear1d_out_frame_backward", [&] {
         using accscalar_t = at::acc_type<scalar_t, true>;
 
-        const accscalar_t rwidth = linear_upsampling_compute_scale<accscalar_t>(
+        const accscalar_t rwidth = area_pixel_compute_scale<accscalar_t>(
             input_width, output_width, align_corners);
 
         upsample_linear1d_out_frame_backward<scalar_t, accscalar_t>

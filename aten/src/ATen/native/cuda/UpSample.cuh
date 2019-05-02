@@ -113,7 +113,7 @@ static inline void upsample_3d_shape_check(
 }
 
 template <typename accscalar_t>
-__host__ __forceinline__ static accscalar_t linear_upsampling_compute_scale(
+__host__ __forceinline__ static accscalar_t area_pixel_compute_scale(
     int64_t input_size,
     int64_t output_size,
     bool align_corners) {
@@ -126,18 +126,20 @@ __host__ __forceinline__ static accscalar_t linear_upsampling_compute_scale(
 }
 
 template <typename accscalar_t>
-__device__ __forceinline__ static accscalar_t
-linear_upsampling_compute_source_index(
+__device__ __forceinline__ static accscalar_t area_pixel_compute_source_index(
     accscalar_t scale,
     int64_t dst_index,
-    bool align_corners) {
+    bool align_corners,
+    bool cubic) {
   if (align_corners) {
     return scale * dst_index;
   } else {
     accscalar_t src_idx = scale * (dst_index + static_cast<accscalar_t>(0.5)) -
         static_cast<accscalar_t>(0.5);
-    return src_idx < static_cast<accscalar_t>(0) ? static_cast<accscalar_t>(0)
-                                                 : src_idx;
+    // See Note[Follow Opencv resize logic]
+    return (!cubic && src_idx < static_cast<accscalar_t>(0))
+        ? static_cast<accscalar_t>(0)
+        : src_idx;
   }
 }
 

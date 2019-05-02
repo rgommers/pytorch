@@ -19,6 +19,7 @@ __global__ void upsample_bicubic2d_out_frame(
     const int64_t num_elements,
     const accscalar_t height_scale,
     const accscalar_t width_scale,
+    const bool align_corners,
     const PackedTensorAccessor<scalar_t, 4> idata,
     PackedTensorAccessor<scalar_t, 4> odata) {
   int64_t index = threadIdx.x + blockIdx.x * blockDim.x;
@@ -49,12 +50,14 @@ __global__ void upsample_bicubic2d_out_frame(
   }
 
   // Interpolation kernel
-  accscalar_t real_x = width_scale * output_x;
-  int64_t in_x = real_x;
+  accscalar_t real_x = area_pixel_compute_source_index(
+      width_scale, output_x, align_corners, /*cubic=*/true);
+  int64_t in_x = floorf(real_x);
   accscalar_t t_x = real_x - in_x;
 
-  accscalar_t real_y = height_scale * output_y;
-  int64_t in_y = real_y;
+  accscalar_t real_y = area_pixel_compute_source_index(
+      height_scale, output_y, align_corners, /*cubic=*/true);
+  int64_t in_y = floorf(real_y);
   accscalar_t t_y = real_y - in_y;
 
   for (int n = 0; n < batchsize; n++) {
@@ -123,12 +126,14 @@ __global__ void upsample_bicubic2d_backward_out_frame(
     return;
   }
 
-  accscalar_t real_x = width_scale * output_x;
-  int64_t input_x = real_x;
+  accscalar_t real_x = area_pixel_compute_source_index(
+      width_scale, output_x, align_corners, /*cubic=*/true);
+  int64_t input_x = floorf(real_x);
   accscalar_t t_x = real_x - input_x;
 
-  accscalar_t real_y = height_scale * output_y;
-  int64_t input_y = real_y;
+  accscalar_t real_y = area_pixel_compute_source_index(
+      height_scale, output_y, align_corners, /*cubic=*/true);
+  int64_t input_y = floorf(real_y);
   accscalar_t t_y = real_y - input_y;
 
   accscalar_t x_coeffs[4];
@@ -211,17 +216,22 @@ static void upsample_bicubic2d_out_cuda_template(
         auto odata = output.packed_accessor<scalar_t, 4>();
 
         // Get scaling factors
-        const accscalar_t rheight =
-            linear_upsampling_compute_scale<accscalar_t>(
-                input_height, output_height, align_corners);
-        const accscalar_t rwidth = linear_upsampling_compute_scale<accscalar_t>(
+        const accscalar_t rheight = area_pixel_compute_scale<accscalar_t>(
+            input_height, output_height, align_corners);
+        const accscalar_t rwidth = area_pixel_compute_scale<accscalar_t>(
             input_width, output_width, align_corners);
 
         upsample_bicubic2d_out_frame<scalar_t, accscalar_t>
             <<<(num_output_elements + max_threads - 1) / max_threads,
                max_threads,
                0,
-               stream>>>(num_output_elements, rheight, rwidth, idata, odata);
+               stream>>>(
+                num_output_elements,
+                rheight,
+                rwidth,
+                align_corners,
+                idata,
+                odata);
       });
 
   AT_CHECK(
@@ -288,10 +298,9 @@ static void upsample_bicubic2d_backward_out_cuda_template(
         auto idata = grad_input.packed_accessor<scalar_t, 4>();
         auto odata = grad_output.packed_accessor<scalar_t, 4>();
 
-        const accscalar_t rheight =
-            linear_upsampling_compute_scale<accscalar_t>(
-                input_height, output_height, align_corners);
-        const accscalar_t rwidth = linear_upsampling_compute_scale<accscalar_t>(
+        const accscalar_t rheight = area_pixel_compute_scale<accscalar_t>(
+            input_height, output_height, align_corners);
+        const accscalar_t rwidth = area_pixel_compute_scale<accscalar_t>(
             input_width, output_width, align_corners);
 
         upsample_bicubic2d_backward_out_frame<scalar_t, accscalar_t>
