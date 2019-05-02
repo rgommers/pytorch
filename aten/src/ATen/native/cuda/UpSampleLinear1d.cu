@@ -132,7 +132,7 @@ static void upsample_linear1d_out_cuda_template(
   upsample_1d_shape_check(
       input, Tensor(), nbatch, channels, input_width, output_width);
 
-  output.resize({input.size(0), input.size(1), output_width});
+  output.resize_({input.size(0), input.size(1), output_width});
   output.zero_();
 
   auto idata = input.packed_accessor<scalar_t, 3>();
@@ -194,7 +194,7 @@ static void upsample_linear1d_backward_out_cuda_template(
 
   Tensor grad_output = grad_output_.contiguous();
 
-  grad_input.resize({nbatch, channels, input_width});
+  grad_input.resize_({nbatch, channels, input_width});
   grad_input.zero_();
 
   auto idata = grad_input.packed_accessor<scalar_t, 3>();

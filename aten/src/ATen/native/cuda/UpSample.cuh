@@ -7,6 +7,17 @@
 namespace at {
 namespace native {
 
+/* TODO: move this to a common place */
+template <scalar_t>
+__device__ inline scalar_t min(a, b) {
+  return ((a) < (b)) ? (a) : (b);
+}
+
+template <scalar_t>
+__device__ inline scalar_t max(a, b) {
+  return ((a) > (b)) ? (a) : (b);
+}
+
 static inline void upsample_1d_shape_check(
     const Tensor& input,
     const Tensor& grad_output,
@@ -147,8 +158,8 @@ __device__ __forceinline__ static int64_t nearest_neighbor_compute_source_index(
     const float scale,
     int64_t dst_index,
     int64_t input_size) {
-  const int64_t src_index =
-      std::min(static_cast<int64_t>(floorf(dst_index * scale)), input_size - 1);
+  const int64_t src_index = min<int64_t>(
+      static_cast<int64_t>(floorf(dst_index * scale)), input_size - 1);
   return src_index;
 }
 
@@ -161,8 +172,10 @@ __device__ __forceinline__ static scalar_t upsampling_get_value_bounded(
     int64_t height,
     int64_t x,
     int64_t y) {
-  int64_t access_x = std::max(std::min(x, width - 1), static_cast<int64_t>(0));
-  int64_t access_y = std::max(std::min(y, height - 1), static_cast<int64_t>(0));
+  int64_t access_x =
+      max<int64_t>(min<int64_t>(x, width - 1), static_cast<int64_t>(0));
+  int64_t access_y =
+      max<int64_t>(min<int64_t>(y, height - 1), static_cast<int64_t>(0));
   return data[batch][channel][access_y][access_x];
 }
 
@@ -176,11 +189,10 @@ __device__ __forceinline__ static void upsampling_increment_value_bounded(
     int64_t x,
     int64_t y,
     accscalar_t value) {
-  int64_t access_x = std::max(std::min(x, width - 1), static_cast<int64_t>(0));
-  int64_t access_y = std::max(std::min(y, height - 1), static_cast<int64_t>(0));
+  int64_t access_x = max<int64_t>(min<int64_t>(x, width - 1), static_cast<int64_t>(0));
+  int64_t access_y = max<int64_t>(min<int64_t>(y, height - 1), static_cast<int64_t>(0));
   atomicAdd(
-      &data[batch][channel][access_y][access_x],
-      static_cast<scalar_t>(value));
+      &data[batch][channel][access_y][access_x], static_cast<scalar_t>(value));
 }
 
 // Based on
