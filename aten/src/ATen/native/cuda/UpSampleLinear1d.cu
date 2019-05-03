@@ -138,8 +138,6 @@ static void upsample_linear1d_out_cuda_template(
 
   AT_ASSERT(input_width > 0 && output_width > 0);
 
-  const accscalar_t rwidth = area_pixel_compute_scale<accscalar_t>(
-      input_width, output_width, align_corners);
   const int64_t num_kernels = output_width;
   const int64_t num_threads =
       at::cuda::getCurrentDeviceProperties()->maxThreadsPerBlock;
@@ -151,6 +149,9 @@ static void upsample_linear1d_out_cuda_template(
 
         auto idata = input.packed_accessor<scalar_t, 3>();
         auto odata = output.packed_accessor<scalar_t, 3>();
+
+        const accscalar_t rwidth = area_pixel_compute_scale<accscalar_t>(
+          input_width, output_width, align_corners);
 
         upsample_linear1d_out_frame<scalar_t, accscalar_t>
             <<<(num_kernels + num_threads - 1) / num_threads,
@@ -258,7 +259,7 @@ Tensor& upsample_linear1d_backward_out_cuda(
     bool align_corners) {
   upsample_linear1d_backward_out_cuda_template(
       grad_input, grad_output, output_size, input_size, align_corners);
-  return grand_input;
+  return grad_input;
 }
 
 Tensor upsample_linear1d_backward_cuda(
