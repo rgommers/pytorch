@@ -1,0 +1,276 @@
+Sending build context to Docker daemon  930.5MB
+Step 1/26 : FROM ubuntu:18.04
+ ---> 3556258649b2
+Step 2/26 : RUN apt-get update -y
+ ---> Using cache
+ ---> bf5ce61b4081
+Step 3/26 : RUN apt-get install -y git curl cmake python3-dev python3-pip
+ ---> Using cache
+ ---> c60f6a5d5fa4
+Step 4/26 : RUN git clone --recursive https://github.com/pytorch/pytorch.git
+ ---> Using cache
+ ---> 5bce3646ace6
+Step 5/26 : RUN python3 -m pip install --verbose --user virtualenv
+ ---> Using cache
+ ---> b7d9ccef4a06
+Step 6/26 : RUN python3 -m pip --version
+ ---> Using cache
+ ---> 624a78dd0ba8
+Step 7/26 : RUN python3 -m virtualenv -p python3 pytorch_virtualenv
+ ---> Using cache
+ ---> 4d06bdc8395f
+Step 8/26 : RUN . ./pytorch_virtualenv/bin/activate
+ ---> Using cache
+ ---> b29416e58d5b
+Step 9/26 : RUN python3 -m pip install --verbose --force-reinstall future leveldb numpy protobuf pydot python-gflags pyyaml scikit-image setuptools six hypothesis typing tqdm
+ ---> Using cache
+ ---> 36bcd66dd655
+Step 10/26 : RUN python3 -m pip install --upgrade pip
+ ---> Using cache
+ ---> 3728d11a6988
+Step 11/26 : RUN python3 -m pip install --verbose ./pytorch/.
+ ---> Using cache
+ ---> 1d16f0d04a63
+Step 12/26 : RUN python3 -m pip install --verbose --force-reinstall mkl
+ ---> Using cache
+ ---> aca4a53b24df
+Step 13/26 : RUN ls -l /usr/local/lib/python3.6/dist-packages/torch/lib
+ ---> Running in 531703f3a043
+total 232788
+-rw-r--r-- 1 root staff    368568 Aug 16 22:31 libc10.so
+-rw-r--r-- 1 root staff    982224 Aug 16 22:31 libcaffe2_detectron_ops.so
+-rw-r--r-- 1 root staff    126080 Aug 16 22:31 libcaffe2_module_test_dynamic.so
+-rw-r--r-- 1 root staff    169520 Aug 16 22:31 libcaffe2_observers.so
+-rwxr-xr-x 1 root staff   2106132 Aug 16 22:31 libiomp5.so
+-rwxr-xr-x 1 root staff 130041866 Aug 16 22:31 libmklml_intel.so
+-rw-r--r-- 1 root staff     51568 Aug 16 22:31 libshm.so
+-rw-r--r-- 1 root staff  94554536 Aug 16 22:31 libtorch.so
+-rw-r--r-- 1 root staff   9953200 Aug 16 22:31 libtorch_python.so
+Removing intermediate container 531703f3a043
+ ---> ea7a520db0cf
+Step 14/26 : RUN ldd /usr/local/lib/python3.6/dist-packages/torch/_C.cpython-36m-x86_64-linux-gnu.so
+ ---> Running in 4541e896bce4
+	linux-vdso.so.1 (0x00007ffc721cb000)
+	libtorch_python.so => /usr/local/lib/python3.6/dist-packages/torch/lib/libtorch_python.so (0x00007fe9ec3e6000)
+	libshm.so => /usr/local/lib/python3.6/dist-packages/torch/lib/libshm.so (0x00007fe9ec1dc000)
+	libtorch.so => /usr/local/lib/python3.6/dist-packages/torch/lib/libtorch.so (0x00007fe9e74cc000)
+	librt.so.1 => /lib/x86_64-linux-gnu/librt.so.1 (0x00007fe9e72c4000)
+	libc10.so => /usr/local/lib/python3.6/dist-packages/torch/lib/libc10.so (0x00007fe9e707b000)
+	libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007fe9e6e5c000)
+	libstdc++.so.6 => /usr/lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fe9e6ad3000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fe9e68bb000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fe9e64ca000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007fe9ecfce000)
+	libgomp.so.1 => /usr/lib/x86_64-linux-gnu/libgomp.so.1 (0x00007fe9e629b000)
+	libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007fe9e6097000)
+	libmklml_intel.so => /usr/local/lib/python3.6/dist-packages/torch/lib/libmklml_intel.so (0x00007fe9de619000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fe9de27b000)
+	libiomp5.so => not found
+Removing intermediate container 4541e896bce4
+ ---> 11995a744ad4
+Step 15/26 : RUN readelf -d /usr/local/lib/python3.6/dist-packages/torch/_C.cpython-36m-x86_64-linux-gnu.so
+ ---> Running in 2c694adab708
+
+Dynamic section at offset 0xe40 contains 22 entries:
+  Tag        Type                         Name/Value
+ 0x0000000000000001 (NEEDED)             Shared library: [libtorch_python.so]
+ 0x000000000000001d (RUNPATH)            Library runpath: [$ORIGIN/lib]
+ 0x000000000000000c (INIT)               0x4e0
+ 0x000000000000000d (FINI)               0x618
+ 0x0000000000000019 (INIT_ARRAY)         0x200e30
+ 0x000000000000001b (INIT_ARRAYSZ)       8 (bytes)
+ 0x000000000000001a (FINI_ARRAY)         0x200e38
+ 0x000000000000001c (FINI_ARRAYSZ)       8 (bytes)
+ 0x000000006ffffef5 (GNU_HASH)           0x1f0
+ 0x0000000000000005 (STRTAB)             0x368
+ 0x0000000000000006 (SYMTAB)             0x248
+ 0x000000000000000a (STRSZ)              178 (bytes)
+ 0x000000000000000b (SYMENT)             24 (bytes)
+ 0x0000000000000003 (PLTGOT)             0x201000
+ 0x0000000000000002 (PLTRELSZ)           24 (bytes)
+ 0x0000000000000014 (PLTREL)             RELA
+ 0x0000000000000017 (JMPREL)             0x4c8
+ 0x0000000000000007 (RELA)               0x420
+ 0x0000000000000008 (RELASZ)             168 (bytes)
+ 0x0000000000000009 (RELAENT)            24 (bytes)
+ 0x000000006ffffff9 (RELACOUNT)          3
+ 0x0000000000000000 (NULL)               0x0
+Removing intermediate container 2c694adab708
+ ---> ff96589e2954
+Step 16/26 : RUN ldd /usr/local/lib/python3.6/dist-packages/torch/lib/libtorch.so
+ ---> Running in 6b34ba564ab4
+	linux-vdso.so.1 (0x00007ffdd0aae000)
+	libgomp.so.1 => /usr/lib/x86_64-linux-gnu/libgomp.so.1 (0x00007f73eda61000)
+	libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f73ed842000)
+	librt.so.1 => /lib/x86_64-linux-gnu/librt.so.1 (0x00007f73ed63a000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f73ed422000)
+	libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f73ed21e000)
+	libmklml_intel.so => /usr/local/lib/python3.6/dist-packages/torch/lib/libmklml_intel.so (0x00007f73e57a0000)
+	libc10.so => /usr/local/lib/python3.6/dist-packages/torch/lib/libc10.so (0x00007f73e5557000)
+	libstdc++.so.6 => /usr/lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f73e51ce000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f73e4e30000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f73e4a3f000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f73f29a0000)
+	libiomp5.so => not found
+Removing intermediate container 6b34ba564ab4
+ ---> d446b90e431d
+Step 17/26 : RUN readelf -d /usr/local/lib/python3.6/dist-packages/torch/lib/libtorch.so
+ ---> Running in 522d2ad6832e
+
+Dynamic section at offset 0x4ac02b0 contains 36 entries:
+  Tag        Type                         Name/Value
+ 0x0000000000000001 (NEEDED)             Shared library: [libgomp.so.1]
+ 0x0000000000000001 (NEEDED)             Shared library: [libpthread.so.0]
+ 0x0000000000000001 (NEEDED)             Shared library: [librt.so.1]
+ 0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]
+ 0x0000000000000001 (NEEDED)             Shared library: [libdl.so.2]
+ 0x0000000000000001 (NEEDED)             Shared library: [libmklml_intel.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc10.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libstdc++.so.6]
+ 0x0000000000000001 (NEEDED)             Shared library: [libm.so.6]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x0000000000000001 (NEEDED)             Shared library: [ld-linux-x86-64.so.2]
+ 0x000000000000000e (SONAME)             Library soname: [libtorch.so]
+ 0x000000000000001d (RUNPATH)            Library runpath: [$ORIGIN]
+ 0x000000000000000c (INIT)               0x4be9b8
+ 0x000000000000000d (FINI)               0x3d93b50
+ 0x0000000000000019 (INIT_ARRAY)         0x4c1eca0
+ 0x000000000000001b (INIT_ARRAYSZ)       8312 (bytes)
+ 0x000000000000001a (FINI_ARRAY)         0x4c20d18
+ 0x000000000000001c (FINI_ARRAYSZ)       8 (bytes)
+ 0x000000006ffffef5 (GNU_HASH)           0x228
+ 0x0000000000000005 (STRTAB)             0xbf118
+ 0x0000000000000006 (SYMTAB)             0x2c058
+ 0x000000000000000a (STRSZ)              1953588 (bytes)
+ 0x000000000000000b (SYMENT)             24 (bytes)
+ 0x0000000000000003 (PLTGOT)             0x4cca000
+ 0x0000000000000002 (PLTRELSZ)           224520 (bytes)
+ 0x0000000000000014 (PLTREL)             RELA
+ 0x0000000000000017 (JMPREL)             0x487cb0
+ 0x0000000000000007 (RELA)               0x2a8790
+ 0x0000000000000008 (RELASZ)             1963296 (bytes)
+ 0x0000000000000009 (RELAENT)            24 (bytes)
+ 0x000000006ffffffe (VERNEED)            0x2a8460
+ 0x000000006fffffff (VERNEEDNUM)         9
+ 0x000000006ffffff0 (VERSYM)             0x29c04c
+ 0x000000006ffffff9 (RELACOUNT)          57072
+ 0x0000000000000000 (NULL)               0x0
+Removing intermediate container 522d2ad6832e
+ ---> dc2e1759e2e5
+Step 18/26 : RUN ldd /usr/local/lib/python3.6/dist-packages/torch/lib/libiomp5.so
+ ---> Running in 99a21836cd05
+	linux-vdso.so.1 (0x00007ffdabf60000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f51c1ba6000)
+	libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f51c1987000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f51c1596000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f51c219a000)
+	libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f51c1392000)
+Removing intermediate container 99a21836cd05
+ ---> a36dac852a4f
+Step 19/26 : RUN readelf -d /usr/local/lib/python3.6/dist-packages/torch/lib/libiomp5.so
+ ---> Running in 6f5e8123c53c
+
+Dynamic section at offset 0x1a12e0 contains 30 entries:
+  Tag        Type                         Name/Value
+ 0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]
+ 0x0000000000000001 (NEEDED)             Shared library: [libpthread.so.0]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x0000000000000001 (NEEDED)             Shared library: [ld-linux-x86-64.so.2]
+ 0x0000000000000001 (NEEDED)             Shared library: [libdl.so.2]
+ 0x000000000000000e (SONAME)             Library soname: [libiomp5.so]
+ 0x000000000000000c (INIT)               0x26618
+ 0x000000000000000d (FINI)               0xaaf40
+ 0x0000000000000004 (HASH)               0x228
+ 0x000000006ffffef5 (GNU_HASH)           0x2728
+ 0x0000000000000005 (STRTAB)             0xca90
+ 0x0000000000000006 (SYMTAB)             0x4d80
+ 0x000000000000000a (STRSZ)              26235 (bytes)
+ 0x000000000000000b (SYMENT)             24 (bytes)
+ 0x0000000000000003 (PLTGOT)             0x3a1500
+ 0x0000000000000002 (PLTRELSZ)           5952 (bytes)
+ 0x0000000000000014 (PLTREL)             RELA
+ 0x0000000000000017 (JMPREL)             0x24ed8
+ 0x0000000000000007 (RELA)               0x13e20
+ 0x0000000000000008 (RELASZ)             69816 (bytes)
+ 0x0000000000000009 (RELAENT)            24 (bytes)
+ 0x000000006ffffffc (VERDEF)             0x13b78
+ 0x000000006ffffffd (VERDEFNUM)          13
+ 0x0000000000000018 (BIND_NOW)           
+ 0x000000006ffffffb (FLAGS_1)            Flags: NOW
+ 0x000000006ffffffe (VERNEED)            0x13d30
+ 0x000000006fffffff (VERNEEDNUM)         4
+ 0x000000006ffffff0 (VERSYM)             0x1310c
+ 0x000000006ffffff9 (RELACOUNT)          2861
+ 0x0000000000000000 (NULL)               0x0
+Removing intermediate container 6f5e8123c53c
+ ---> 093f39107a05
+Step 20/26 : RUN ldd /usr/local/lib/python3.6/dist-packages/torch/lib/libmklml_intel.so
+ ---> Running in 82b9eb712639
+	linux-vdso.so.1 (0x00007ffe27e99000)
+	libiomp5.so => not found
+	libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007fbd2cb2f000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fbd2c791000)
+	libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007fbd2c58d000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fbd2c19c000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007fbd347cc000)
+Removing intermediate container 82b9eb712639
+ ---> 244109767e7f
+Step 21/26 : RUN readelf -d /usr/local/lib/python3.6/dist-packages/torch/lib/libmklml_intel.so
+ ---> Running in 75be5b19a4c5
+
+Dynamic section at offset 0x777c520 contains 29 entries:
+  Tag        Type                         Name/Value
+ 0x0000000000000001 (NEEDED)             Shared library: [libiomp5.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libpthread.so.0]
+ 0x0000000000000001 (NEEDED)             Shared library: [libm.so.6]
+ 0x0000000000000001 (NEEDED)             Shared library: [libdl.so.2]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x0000000000000001 (NEEDED)             Shared library: [ld-linux-x86-64.so.2]
+ 0x000000000000000c (INIT)               0x193af8
+ 0x000000000000000d (FINI)               0x19b3f60
+ 0x0000000000000019 (INIT_ARRAY)         0x7971510
+ 0x000000000000001b (INIT_ARRAYSZ)       384 (bytes)
+ 0x0000000000000004 (HASH)               0x1c8
+ 0x0000000000000005 (STRTAB)             0x6e638
+ 0x0000000000000006 (SYMTAB)             0x16bd0
+ 0x000000000000000a (STRSZ)              437551 (bytes)
+ 0x000000000000000b (SYMENT)             24 (bytes)
+ 0x0000000000000003 (PLTGOT)             0x797c730
+ 0x0000000000000002 (PLTRELSZ)           150816 (bytes)
+ 0x0000000000000014 (PLTREL)             RELA
+ 0x0000000000000017 (JMPREL)             0x16edd8
+ 0x0000000000000007 (RELA)               0xe0908
+ 0x0000000000000008 (RELASZ)             582864 (bytes)
+ 0x0000000000000009 (RELAENT)            24 (bytes)
+ 0x0000000000000018 (BIND_NOW)           
+ 0x000000006ffffffb (FLAGS_1)            Flags: NOW
+ 0x000000006ffffffe (VERNEED)            0xe0848
+ 0x000000006fffffff (VERNEEDNUM)         6
+ 0x000000006ffffff0 (VERSYM)             0xd9368
+ 0x000000006ffffff9 (RELACOUNT)          5899
+ 0x0000000000000000 (NULL)               0x0
+Removing intermediate container 75be5b19a4c5
+ ---> 175db57e2408
+Step 22/26 : RUN file /usr/local/lib/python3.6/dist-packages/torch/lib/libmklml_intel.so
+ ---> Running in 17be53bec8fd
+/usr/local/lib/python3.6/dist-packages/torch/lib/libmklml_intel.so: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, with debug_info, not stripped
+Removing intermediate container 17be53bec8fd
+ ---> 564cc7c48af7
+Step 23/26 : RUN file /usr/local/lib/python3.6/dist-packages/torch/lib/libiomp5.so
+ ---> Running in d0ff723c417a
+/usr/local/lib/python3.6/dist-packages/torch/lib/libiomp5.so: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, BuildID[sha1]=9dfa23ad70f3f8f50699aac84586f3ba832b7034, not stripped
+Removing intermediate container d0ff723c417a
+ ---> dc3d39cfff76
+Step 24/26 : RUN python3 -m pip --version
+ ---> Running in 431aa9893b66
+pip 19.2.2 from /usr/local/lib/python3.6/dist-packages/pip (python 3.6)
+Removing intermediate container 431aa9893b66
+ ---> 97bce62e9bd6
+Step 25/26 : RUN python3 -c 'from torch._C import *'
+ ---> Running in 0ae9e9503624
+[91mTraceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/usr/local/lib/python3.6/dist-packages/torch/__init__.py", line 81, in <module>
+    from torch._C import *
+ImportError: libiomp5.so: cannot open shared object file: No such file or directory
+[0m
