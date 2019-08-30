@@ -1,3 +1,5 @@
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 # RPATH stuff
 # see https://cmake.org/Wiki/CMake_RPATH_handling
 if (APPLE)

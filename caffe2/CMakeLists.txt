@@ -1,6 +1,8 @@
 # ---[ Generate and install header and cpp files
 include(../cmake/Codegen.cmake)
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 # ---[ Declare source file lists
 
 # ---[ ATen build
