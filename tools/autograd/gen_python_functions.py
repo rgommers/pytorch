@@ -51,6 +51,7 @@ PY_VARIABLE_METHOD_VARARGS = CodeTemplate("""\
 static PyObject * ${pycname}(PyObject* self_, PyObject* args, PyObject* kwargs)
 {
   HANDLE_TH_ERRORS
+  std::cout << "hello world!" << std::endl;
   static PythonArgParser parser({
     ${signatures}
   }, /*traceable=*/${traceable});

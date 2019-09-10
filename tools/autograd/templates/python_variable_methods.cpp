@@ -578,6 +578,7 @@ static PyObject * THPVariable_map2_(PyObject* self, PyObject* args, PyObject* kw
 
 static PyObject * THPVariable_new(PyObject* self, PyObject* args, PyObject* kwargs)
 {
+  std::cout << "In THPVariable_new" << std::endl;
   HANDLE_TH_ERRORS
   auto& self_ = reinterpret_cast<THPVariable*>(self)->cdata;
   OptionalDeviceGuard device_guard(device_of(self_));
@@ -587,6 +588,7 @@ static PyObject * THPVariable_new(PyObject* self, PyObject* args, PyObject* kwar
 
 static PyObject * THPVariable_new_empty(PyObject* self, PyObject* args, PyObject* kwargs)
 {
+  std::cout << "In THPVariable_new_empty" << std::endl;
   HANDLE_TH_ERRORS
   auto& self_ = reinterpret_cast<THPVariable*>(self)->cdata;
   OptionalDeviceGuard device_guard(device_of(self_));
@@ -596,6 +598,7 @@ static PyObject * THPVariable_new_empty(PyObject* self, PyObject* args, PyObject
 
 static PyObject * THPVariable_new_full(PyObject* self, PyObject* args, PyObject* kwargs)
 {
+  std::cout << "In THPVariable_new_full" << std::endl;
   HANDLE_TH_ERRORS
   auto& self_ = reinterpret_cast<THPVariable*>(self)->cdata;
   OptionalDeviceGuard device_guard(device_of(self_));
@@ -605,6 +608,7 @@ static PyObject * THPVariable_new_full(PyObject* self, PyObject* args, PyObject*
 
 static PyObject * THPVariable_new_ones(PyObject* self, PyObject* args, PyObject* kwargs)
 {
+  std::cout << "In THPVariable_new_ones" << std::endl;
   HANDLE_TH_ERRORS
   auto& self_ = reinterpret_cast<THPVariable*>(self)->cdata;
   OptionalDeviceGuard device_guard(device_of(self_));
@@ -615,6 +619,7 @@ static PyObject * THPVariable_new_ones(PyObject* self, PyObject* args, PyObject*
 static PyObject * THPVariable_new_tensor(PyObject* self, PyObject* args, PyObject* kwargs)
 {
   HANDLE_TH_ERRORS
+  std::cout << "In THPVariable new_tensor" << std::endl;
   auto& self_ = reinterpret_cast<THPVariable*>(self)->cdata;
   OptionalDeviceGuard device_guard(device_of(self_));
   return THPVariable_Wrap(torch::utils::new_tensor(self_.type_id(), self_.scalar_type(), args, kwargs));
@@ -623,6 +628,7 @@ static PyObject * THPVariable_new_tensor(PyObject* self, PyObject* args, PyObjec
 
 static PyObject * THPVariable_new_zeros(PyObject* self, PyObject* args, PyObject* kwargs)
 {
+  std::cout << "In THPVariable_new_zeros" << std::endl;
   HANDLE_TH_ERRORS
   auto& self_ = reinterpret_cast<THPVariable*>(self)->cdata;
   OptionalDeviceGuard device_guard(device_of(self_));
@@ -632,6 +638,7 @@ static PyObject * THPVariable_new_zeros(PyObject* self, PyObject* args, PyObject
 
 static PyObject * THPVariable_storage(PyObject* self, PyObject* arg)
 {
+  std::cout << "In THPVariable_storage" << std::endl;
   HANDLE_TH_ERRORS
   auto& self_ = reinterpret_cast<THPVariable*>(self)->cdata;
   return createPyObject(self_.storage());

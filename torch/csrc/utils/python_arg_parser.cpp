@@ -130,9 +130,32 @@ FunctionParameter::FunctionParameter(const std::string& fmt, bool keyword_only)
   }
 }
 
+bool THPVariable_check_torch_function(PyObject *o, PyObject *attr_name){
+  int has_torch_function = PyObject_HasAttr(o, attr_name);
+  if(has_torch_function == 1){
+    return true;
+  }
+  return false;
+}
+
 bool FunctionParameter::check(PyObject* obj) {
+  std::cout << "in FunctionParameter::check" << std::endl;
   switch (type_) {
     case ParameterType::TENSOR: {
+      if(THPVariable_Check_Subclass(obj)){
+        std::cout << "Check for subclass" << std::endl;
+      }
+
+      PyObject* method = PyObject_GetAttrString(obj, "__torch_function__");
+      std::cout << "Check for torch function implementation" << std::endl;
+      if(method != NULL){
+        std::cout << "Found" << std::endl;
+      }
+      else{
+        std::cout << "Not Found" << std::endl;
+      }
+      PyObject_CallFunctionObjArgs(method, argument, public_api, types, args, kwargs, NULL);
+
       return THPVariable_Check(obj) || (allow_numbers_as_tensors && THPUtils_checkDouble(obj));
     }
     case ParameterType::SCALAR:
@@ -194,6 +217,7 @@ bool FunctionParameter::check(PyObject* obj) {
 }
 
 std::string FunctionParameter::type_name() const {
+  std::cout << "FunctionParameter::type_name()" << std::endl;
   switch (type_) {
     case ParameterType::TENSOR: return "Tensor";
     case ParameterType::SCALAR: return "Number";
@@ -261,6 +285,7 @@ static inline std::vector<int64_t> parse_intlist_args(const std::string& s, int6
 }
 
 void FunctionParameter::set_default_str(const std::string& str) {
+  std::cout << "FunctionParameter::set_default_str" << std::endl;
   if (str == "None") {
     allow_none = true;
   }
@@ -321,6 +346,7 @@ FunctionSignature::FunctionSignature(const std::string& fmt)
   , hidden(false)
   , deprecated(false)
 {
+  std::cout << "detected function signature" << std::endl;
   auto open_paren = fmt.find('(');
   if (open_paren == std::string::npos) {
     throw std::runtime_error("missing opening parenthesis: " + fmt);
@@ -346,6 +372,7 @@ FunctionSignature::FunctionSignature(const std::string& fmt)
       throw std::runtime_error("missing closing parenthesis: " + fmt);
     }
     if (offset == last_offset) {
+      std::cout << "offset break. function signature is" << fmt << std::endl;
       break;
     }
 
@@ -378,6 +405,7 @@ FunctionSignature::FunctionSignature(const std::string& fmt)
       max_pos_args++;
     }
   }
+  std::cout << "2. function signature is" << fmt << std::endl;
 }
 
 std::string FunctionSignature::toString() const {
@@ -392,6 +420,7 @@ std::string FunctionSignature::toString() const {
     i++;
   }
   ss << ")";
+  std::cout << "FunctionSignature  is " << ss.str() << std::endl;
   return ss.str();
 }
 
@@ -474,7 +503,9 @@ static void extra_kwargs(FunctionSignature& signature, PyObject* kwargs, ssize_t
 
 bool FunctionSignature::parse(PyObject* args, PyObject* kwargs, PyObject* dst[],
                               bool raise_exception) {
+  std::cout << "FunctionSignature::parse, Trying to find out torch_Function" << std::endl;
   auto nargs = PyTuple_GET_SIZE(args);
+  std::cout << "nargs ->" << nargs << std::endl;
   ssize_t remaining_kwargs = kwargs ? PyDict_Size(kwargs) : 0;
   ssize_t arg_pos = 0;
   bool allow_varargs_intlist = false;
@@ -575,7 +606,9 @@ PythonArgParser::PythonArgParser(std::vector<std::string> fmts, bool traceable)
  : max_args(0)
  , traceable(traceable)
 {
+  std::cout << "fmts is => " << fmts << std::endl;
   for (auto& fmt : fmts) {
+    std::cout << "fmt=> " << fmt << std::endl;
     signatures_.emplace_back(fmt);
   }
   for (auto& signature : signatures_) {
@@ -585,20 +618,24 @@ PythonArgParser::PythonArgParser(std::vector<std::string> fmts, bool traceable)
   }
   if (signatures_.size() > 0) {
     function_name = signatures_[0].name;
+    std::cout << "function_name is => " << function_name << std::endl;
   }
 }
 
 PythonArgs PythonArgParser::raw_parse(PyObject* args, PyObject* kwargs, PyObject* parsed_args[]) {
+  std::cout << "In PythonArgParser::raw_parse" << std::endl;
   if (signatures_.size() == 1) {
     auto& signature = signatures_[0];
     signature.parse(args, kwargs, parsed_args, true);
-    return PythonArgs(0, traceable, signature, parsed_args);
+    auto x =  PythonArgs(0, traceable, signature, parsed_args);
+    return x;
   }
 
   int i = 0;
   for (auto& signature : signatures_) {
     if (signature.parse(args, kwargs, parsed_args, false)) {
-      return PythonArgs(i, traceable, signature, parsed_args);
+      auto x = PythonArgs(i, traceable, signature, parsed_args);
+      return x;
     }
     i++;
   }
@@ -618,6 +655,10 @@ void PythonArgParser::print_error(PyObject* args, PyObject* kwargs, PyObject* pa
   }
 
   if (plausible_idxs.size() == 1) {
+  std::cout << "called tensor_slow" << std::endl;
+
+  std::cout << "called tensor_slow" << std::endl;
+
     auto& signature = signatures_[plausible_idxs[0]];
     signature.parse(args, kwargs, parsed_args, true);
   }
@@ -634,6 +675,7 @@ void PythonArgParser::print_error(PyObject* args, PyObject* kwargs, PyObject* pa
 }
 
 at::Tensor PythonArgs::tensor_slow(int i) {
+  std::cout << "called tensor_slow" << std::endl;
   PyObject* obj = args[i];
   if (!obj) {
     return at::Tensor();
@@ -662,6 +704,7 @@ at::Tensor PythonArgs::tensor_slow(int i) {
 }
 
 at::Scalar PythonArgs::scalar_slow(int i) {
+  std::cout << "called scalar_slow" << std::endl;
   if (traceable && jit::tracer::isTracing() && THPVariable_Check(args[i])) {
     auto& var = THPVariable_Unpack(args[i]);
     jit::tracer::ArgumentStash::stashValue(

@@ -52,6 +52,7 @@ static const char* VOLATILE_WARNING =
 // have a PyObject* associated with it.
 static PyObject* THPVariable_NewWithVar(PyTypeObject* type, Variable var)
 {
+  std::cout << "In THPVariable_NewWithVar" << std::endl;
   PyObject* obj = type->tp_alloc(type, 0);
   if (obj) {
     auto v = (THPVariable*) obj;
@@ -139,6 +140,7 @@ static void THPVariable_dealloc(THPVariable* self)
 static PyObject *THPVariable_pynew(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
   HANDLE_TH_ERRORS
+  std::cout << "In THPVariable_pynew" << std::endl;
   jit::tracer::warn("torch.Tensor", jit::tracer::WARN_CONSTRUCTOR);
   auto tensor = torch::utils::legacy_tensor_ctor(torch::tensors::get_default_tensor_type_id(), torch::tensors::get_default_scalar_type(), args, kwargs);
   return THPVariable_NewWithVar(type, std::move(tensor));

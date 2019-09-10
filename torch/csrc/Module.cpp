@@ -28,6 +28,7 @@
 #include <torch/csrc/Layout.h>
 #include <torch/csrc/MemoryFormat.h>
 #include <torch/csrc/QScheme.h>
+#include <torch/csrc/torchfunction_override.cpp>
 #include <torch/csrc/TypeInfo.h>
 #include <torch/csrc/autograd/generated/python_nn_functions.h>
 #include <torch/csrc/autograd/python_legacy_variable.h>

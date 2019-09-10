@@ -27,6 +27,14 @@ static inline bool THPVariable_CheckExact(PyObject *obj) {
   return Py_TYPE(obj) == (PyTypeObject*)THPVariableClass;
 }
 
+inline bool THPVariable_Check_Subclass(PyObject *obj){
+  int is_subclass = PyObject_IsSubclass((PyObject *)Py_TYPE(obj), (PyObject *)THPVariableClass);
+  if (is_subclass == -1) {
+    return false;
+  }
+  return true;
+}
+
 inline bool THPVariable_Check(PyObject *obj)
 {
   return THPVariableClass && PyObject_IsInstance(obj, THPVariableClass);
