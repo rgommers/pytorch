@@ -138,6 +138,199 @@ bool THPVariable_check_torch_function(PyObject *o, PyObject *attr_name){
   return false;
 }
 
+static bool
+_is_basic_python_type(PyTypeObject *tp)
+{
+    return (
+        /* Basic number types */
+        tp == &PyBool_Type ||
+
+        tp == &PyLong_Type ||
+        tp == &PyFloat_Type ||
+        tp == &PyComplex_Type ||
+
+        /* Basic sequence types */
+        tp == &PyList_Type ||
+        tp == &PyTuple_Type ||
+        tp == &PyDict_Type ||
+        tp == &PySet_Type ||
+        tp == &PyFrozenSet_Type ||
+        tp == &PyUnicode_Type ||
+        tp == &PyBytes_Type ||
+/*#if !defined(NPY_PY3K)
+        tp == &PyString_Type ||
+#endif  DISCUSS*/
+
+        /* other builtins */
+        tp == &PySlice_Type ||
+        tp == Py_TYPE(Py_None) ||
+        tp == Py_TYPE(Py_Ellipsis) ||
+        tp == Py_TYPE(Py_NotImplemented) ||
+
+        /* TODO: ndarray, but we can't see PyArray_Type here */
+
+        /* sentinel to swallow trailing || */
+        false
+    );
+}
+
+static PyObject * maybe_get_attr(PyObject *obj, char *name)
+{
+    PyTypeObject *tp = Py_TYPE(obj);
+    PyObject *res = (PyObject *)NULL;
+
+    /* Attribute referenced by (char *)name */
+    if (tp->tp_getattr != NULL) {
+        res = (*tp->tp_getattr)(obj, name);
+        if (res == NULL) {
+            PyErr_Clear();
+        }
+    }
+    /* Attribute referenced by (PyObject *)name */
+    else if (tp->tp_getattro != NULL) {
+        PyObject *w = PyUnicode_InternFromString(name);
+        if (w == NULL) {
+            return (PyObject *)NULL;
+        }
+        res = (*tp->tp_getattro)(obj, w);
+        Py_DECREF(w);
+        if (res == NULL) {
+            PyErr_Clear();
+        }
+    }
+    return res;
+}
+
+
+static PyObject* get_tensor_torch_function(void){
+  std::cout << "Called get_tensor_torch_function()" << std::endl;
+  PyObject* method = PyObject_GetAttrString((PyObject*)THPVariableClass, "__torch_function__");
+  assert(method != NULL);
+  return method;
+}
+
+
+static PyObject*
+PyArray_LookupSpecial(PyObject *obj, char *name)
+{
+  std::cout << "Called PyArray_LookupSpecial()" << std::endl;
+  PyTypeObject *tp = Py_TYPE(obj);
+
+  /* We do not need to check for special attributes on trivial types */
+  if (_is_basic_python_type(tp)) {
+      return NULL;
+  }
+  return maybe_get_attr((PyObject *)tp, name);
+}
+
+static PyObject* get_torch_function(PyObject* obj){
+  std::cout << "called get_torch_function()" << std::endl;
+  static PyObject* tensor_torch_function = NULL;
+
+  if (tensor_torch_function == NULL){
+    tensor_torch_function = get_tensor_torch_function();
+  }
+
+  if(THPVariable_CheckExact(obj)){
+    std::cout << "Found torch.tensor.__torch_function__" << std::endl;
+    Py_INCREF(tensor_torch_function);
+    return tensor_torch_function;
+  }
+  std::cout << "Didn't find torch.tensor.__torch_function__" << std::endl;
+
+  return PyArray_LookupSpecial(obj, "__torch_function__");
+}
+
+bool FunctionParameter::check2(PyObject* obj, PyObject* args, PyObject* kwargs) {
+  std::cout << "in FunctionParameter::check2" << std::endl;
+  switch (type_) {
+    case ParameterType::TENSOR: {
+      if(THPVariable_Check_Subclass(obj)){
+        std::cout << "Check for subclass" << std::endl;
+      }
+
+      PyObject* method = PyObject_GetAttrString(obj, "__torch_function__");
+      std::cout << "Check for torch function implementation" << std::endl;
+      PyObject *method_to_be_called;
+      if(method != NULL){
+        std::cout << "Found" << std::endl;
+        method_to_be_called = get_torch_function(obj);
+        // PyObject *implementation = PyObject_GetAttr(func, npy_ma_str_implementation);
+        // if (implementation == NULL) {
+        //   std::cout << "Implementation not Found" << std::endl;
+        //   return NULL;
+        // }
+        // result = PyObject_Call(implementation, args, kwargs);
+      }
+      else{
+        std::cout << "Not Found" << std::endl;
+      }
+
+      PyObject_CallFunctionObjArgs(obj, method_to_be_called, args, kwargs, NULL);
+
+      std::cout << "I got called!" << std::endl;
+      exit(0);
+      return THPVariable_Check(obj) || (allow_numbers_as_tensors && THPUtils_checkDouble(obj));
+    }
+    case ParameterType::SCALAR:
+      if (PyComplex_Check(obj)) {
+        return true;
+      }
+      // fallthrough
+    case ParameterType::DOUBLE: {
+      if (THPUtils_checkDouble(obj)) {
+        return true;
+      }
+      if (THPVariable_Check(obj)) {
+        auto& var = ((THPVariable*)obj)->cdata;
+        return !var.requires_grad() && var.dim() == 0;
+      }
+      return false;
+    }
+    case ParameterType::INT64: {
+      if (THPUtils_checkLong(obj)) {
+        return true;
+      }
+      if (THPVariable_Check(obj)) {
+        auto& var = ((THPVariable*)obj)->cdata;
+        return at::isIntegralType(var.scalar_type(), /*includeBool=*/false) && !var.requires_grad() && var.dim() == 0;
+      }
+      return false;
+    }
+#ifdef BUILD_NAMEDTENSOR
+    case ParameterType::DIMNAME: return THPUtils_checkDimname(obj);
+    case ParameterType::DIMNAME_LIST: {
+      if (THPUtils_checkDimnameList(obj)) {
+        return true;
+      }
+      // if a size is specified (e.g. DimnameList[1]) we also allow passing a single Dimname
+      return size == 1 && THPUtils_checkDimname(obj);
+    }
+#endif
+    case ParameterType::TENSOR_LIST: return six::isTuple(obj) || PyList_Check(obj);
+    case ParameterType::INT_LIST: {
+      if (PyTuple_Check(obj) || PyList_Check(obj)) {
+        return true;
+      }
+      // if a size is specified (e.g. IntArrayRef[2]) we also allow passing a single int
+      return size > 0 && THPUtils_checkLong(obj);
+    }
+    case ParameterType::GENERATOR: return THPGenerator_Check(obj);
+    case ParameterType::BOOL: return PyBool_Check(obj);
+    case ParameterType::STORAGE: return isStorage(obj);
+    case ParameterType::PYOBJECT: return true;
+    case ParameterType::SCALARTYPE: return THPDtype_Check(obj) || THPPythonScalarType_Check(obj);
+    case ParameterType::LAYOUT: return THPLayout_Check(obj);
+    case ParameterType::MEMORY_FORMAT: return THPMemoryFormat_Check(obj);
+    case ParameterType::QSCHEME: return THPQScheme_Check(obj);
+    case ParameterType::DEVICE:
+      return THPUtils_checkLong(obj) || THPUtils_checkString(obj) || THPDevice_Check(obj);
+    case ParameterType::STRING: return THPUtils_checkString(obj);
+    default: throw std::runtime_error("unknown parameter type");
+  }
+}
+
+
 bool FunctionParameter::check(PyObject* obj) {
   std::cout << "in FunctionParameter::check" << std::endl;
   switch (type_) {
@@ -150,11 +343,18 @@ bool FunctionParameter::check(PyObject* obj) {
       std::cout << "Check for torch function implementation" << std::endl;
       if(method != NULL){
         std::cout << "Found" << std::endl;
+        PyObject *method_to_be_called = get_torch_function(obj);
+        // PyObject *implementation = PyObject_GetAttr(func, npy_ma_str_implementation);
+        // if (implementation == NULL) {
+        //   std::cout << "Implementation not Found" << std::endl;
+        //   return NULL;
+        // }
+        // result = PyObject_Call(implementation, args, kwargs);
       }
       else{
         std::cout << "Not Found" << std::endl;
       }
-      PyObject_CallFunctionObjArgs(method, argument, public_api, types, args, kwargs, NULL);
+      // PyObject_CallFunctionObjArgs(method, argument, public_api, types, args, kwargs, NULL);
 
       return THPVariable_Check(obj) || (allow_numbers_as_tensors && THPUtils_checkDouble(obj));
     }
@@ -501,6 +701,109 @@ static void extra_kwargs(FunctionSignature& signature, PyObject* kwargs, ssize_t
   throw TypeError("invalid keyword arguments");
 }
 
+bool FunctionSignature::parse2(PyObject* args, PyObject* kwargs, PyObject* dst[],
+                              bool raise_exception) {
+  std::cout << "FunctionSignature::parse2, Trying to find out torch_Function" << std::endl;
+  auto nargs = PyTuple_GET_SIZE(args);
+  std::cout << "nargs ->" << nargs << std::endl;
+  ssize_t remaining_kwargs = kwargs ? PyDict_Size(kwargs) : 0;
+  ssize_t arg_pos = 0;
+  bool allow_varargs_intlist = false;
+
+  // if there is a single positional IntArrayRef argument, i.e. expand(..), view(...),
+  // allow a var-args style IntArrayRef, so expand(5,3) behaves as expand((5,3))
+  if (max_pos_args == 1 && params[0].type_ == ParameterType::INT_LIST) {
+    allow_varargs_intlist = true;
+  }
+
+  if (nargs > max_pos_args && !allow_varargs_intlist) {
+    if (raise_exception) {
+      // foo() takes takes 2 positional arguments but 3 were given
+      extra_args(*this, nargs);
+    }
+    return false;
+  }
+
+  int i = 0;
+  for (auto& param : params) {
+    PyObject* obj = nullptr;
+    bool is_kwd = false;
+    if (arg_pos < nargs) {
+      // extra positional args given after single positional IntArrayRef arg
+      if (param.keyword_only) {
+        if (raise_exception) {
+          extra_args(*this, nargs);
+        }
+        return false;
+      }
+      obj = PyTuple_GET_ITEM(args, arg_pos);
+    } else if (kwargs) {
+      obj = PyDict_GetItem(kwargs, param.python_name);
+      for (PyObject *numpy_name: param.numpy_python_names) {
+        if (obj) {
+          break;
+        }
+        obj = PyDict_GetItem(kwargs, numpy_name);
+      }
+      is_kwd = true;
+    }
+
+    if ((!obj && param.optional) || (obj == Py_None && param.allow_none)) {
+      dst[i++] = nullptr;
+    } else if (!obj) {
+      if (raise_exception) {
+        // foo() missing 1 required positional argument: "b"
+        missing_args(*this, i);
+      }
+      return false;
+    } else if (param.check2(obj, args, kwargs)) {
+      dst[i++] = obj;
+    // XXX: the Variable check is necessary because sizes become tensors when
+    // tracer is enabled. This behavior easily leads to ambiguities, and we
+    // should avoid having complex signatures that make use of it...
+    } else if (allow_varargs_intlist && arg_pos == 0 && !is_kwd &&
+               THPUtils_checkIndex(obj)) {
+      // take all positional arguments as this parameter
+      // e.g. permute(1, 2, 3) -> permute((1, 2, 3))
+      dst[i++] = args;
+      arg_pos = nargs;
+      continue;
+    } else if (raise_exception) {
+      if (is_kwd) {
+        // foo(): argument 'other' must be str, not int
+        throw TypeError("%s(): argument '%s' must be %s, not %s",
+            name.c_str(), param.name.c_str(), param.type_name().c_str(),
+            Py_TYPE(obj)->tp_name);
+      } else {
+        // foo(): argument 'other' (position 2) must be str, not int
+        throw TypeError("%s(): argument '%s' (position %d) must be %s, not %s",
+            name.c_str(), param.name.c_str(), arg_pos + 1,
+            param.type_name().c_str(), Py_TYPE(obj)->tp_name);
+      }
+    } else {
+      return false;
+    }
+
+    if (!is_kwd) {
+      arg_pos++;
+    } else if (obj) {
+      remaining_kwargs--;
+    }
+  }
+
+  if (remaining_kwargs > 0) {
+    if (raise_exception) {
+      // foo() got an unexpected keyword argument "b"
+      extra_kwargs(*this, kwargs, nargs);
+    }
+    return false;
+  }
+
+  return true;
+}
+
+
+
 bool FunctionSignature::parse(PyObject* args, PyObject* kwargs, PyObject* dst[],
                               bool raise_exception) {
   std::cout << "FunctionSignature::parse, Trying to find out torch_Function" << std::endl;
@@ -634,6 +937,27 @@ PythonArgs PythonArgParser::raw_parse(PyObject* args, PyObject* kwargs, PyObject
   int i = 0;
   for (auto& signature : signatures_) {
     if (signature.parse(args, kwargs, parsed_args, false)) {
+      auto x = PythonArgs(i, traceable, signature, parsed_args);
+      return x;
+    }
+    i++;
+  }
+
+  print_error(args, kwargs, parsed_args);
+}
+
+PythonArgs PythonArgParser::raw_parse2(PyObject* args, PyObject* kwargs, PyObject* parsed_args[]) {
+  std::cout << "In PythonArgParser::raw_parse" << std::endl;
+  if (signatures_.size() == 1) {
+    auto& signature = signatures_[0];
+    signature.parse2(args, kwargs, parsed_args, true);
+    auto x =  PythonArgs(0, traceable, signature, parsed_args);
+    return x;
+  }
+
+  int i = 0;
+  for (auto& signature : signatures_) {
+    if (signature.parse2(args, kwargs, parsed_args, false)) {
       auto x = PythonArgs(i, traceable, signature, parsed_args);
       return x;
     }
