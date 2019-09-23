@@ -98,14 +98,10 @@ struct PythonArgParser {
   template<int N>
   inline PythonArgs parse(PyObject* args, PyObject* kwargs, ParsedArgs<N>& dst);
 
-  template<int N>
-  inline PythonArgs parse2(PyObject* args, PyObject* kwargs, ParsedArgs<N>& dst);
-
 private:
   [[noreturn]]
   void print_error(PyObject* args, PyObject* kwargs, PyObject* parsed_args[]);
   PythonArgs raw_parse(PyObject* args, PyObject* kwargs, PyObject* parsed_args[]);
-  PythonArgs raw_parse2(PyObject* args, PyObject* kwargs, PyObject* parsed_args[]);
 
   std::vector<FunctionSignature> signatures_;
   std::string function_name;
@@ -177,9 +173,7 @@ private:
 struct FunctionSignature {
   explicit FunctionSignature(const std::string& fmt);
 
-  bool parse(PyObject* args, PyObject* kwargs, PyObject* dst[], bool raise_exception);
-  bool parse2(PyObject* args, PyObject* kwargs, PyObject* dst[], PyObject* overloaded_args[], bool raise_exception);
-
+  bool parse(PyObject* args, PyObject* kwargs, PyObject* dst[], PyObject* overloaded_args[], bool raise_exception);
   std::string toString() const;
 
   std::string name;
@@ -192,21 +186,11 @@ struct FunctionSignature {
 };
 
 
-template<int N>
-inline PythonArgs PythonArgParser::parse2(PyObject* args, PyObject* kwargs, ParsedArgs<N>& dst) {
-  if (N < max_args) {
-    throw ValueError("PythonArgParser: dst ParsedArgs buffer does not have enough capacity, expected %d (got %d)",
-        (int)max_args, N);
-  }
-  return raw_parse2(args, kwargs, dst.args);
-}
-
 struct FunctionParameter {
   FunctionParameter(const std::string& fmt, bool keyword_only);
 
   bool check(PyObject* obj);
   bool check_has_torch_function(PyObject* obj);
-
   void set_default_str(const std::string& str);
   std::string type_name() const;
 
@@ -240,6 +224,7 @@ inline PythonArgs PythonArgParser::parse(PyObject* args, PyObject* kwargs, Parse
   }
   return raw_parse(args, kwargs, dst.args);
 }
+
 
 bool PythonArgs::has_torch_function(){
   if(overloaded_args[0] != NULL){
