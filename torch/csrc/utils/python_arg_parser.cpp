@@ -131,12 +131,6 @@ FunctionParameter::FunctionParameter(const std::string& fmt, bool keyword_only)
 }
 
 
-static PyObject* get_tensor_torch_function(void){
-  PyObject* method = PyObject_GetAttrString((PyObject*)THPVariableClass, "__torch_function__");
-  assert(method != NULL);
-  return method;
-}
-
 bool FunctionParameter::check_has_torch_function(PyObject* obj) {
   PyObject* method = PyObject_GetAttrString(obj, "__torch_function__");
   if(method != NULL){
@@ -790,7 +784,6 @@ PythonArgs PythonArgParser::raw_parse2(PyObject* args, PyObject* kwargs, PyObjec
     }
     i++;
   }
-  std::cout << "Out of PythonArgParser::raw_parse2" << std::endl;
 
   print_error(args, kwargs, parsed_args);
 }
