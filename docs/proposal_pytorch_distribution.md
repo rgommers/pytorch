@@ -75,12 +75,15 @@ conda install botorch -c pytorch -c gpytorch
 ```
 
 When a user needs multiple packages, that becomes unwieldy quickly with each
-package adding its own channel. Note: alternatively, pure Python packages can choose to distribute on PyPI only (see the _PyPI, pip and wheels_ section further down) - Kornia is an example of a package that does this.
+package adding its own channel. Note: alternatively, pure Python packages can
+choose to distribute on PyPI only (see the _PyPI, pip and wheels_ section
+further down) - Kornia is an example of a package that does this.
 
 Authors of _packages containing C++ or CUDA code_ which use the PyTorch C++
 API have an additional issue: they need to release new package versions in
 sync with PyTorch itself, because there's no stable ABI that would allow
-depending on multiple PyTorch versions. For example, the torchvision `install_requires` dependency is determined like:
+depending on multiple PyTorch versions. For example, the torchvision
+`install_requires` dependency is determined like:
 
 ```python
 pytorch_dep = 'torch'
@@ -121,7 +124,9 @@ There's more integration testing happening already:
 
 ### End users
 
-The intended outcome for end users is that they will be able to install many of the most commonly packages easily with `conda` from a single channel, e.g.:
+The intended outcome for end users is that they will be able to install many
+of the most commonly packages easily with `conda` from a single channel,
+e.g.:
 
 ```
 conda install pytorch torchvision kornia fastai mmf -c pytorch
@@ -331,7 +336,11 @@ conda create -n rapids-0.16 -c rapidsai -c nvidia -c conda-forge \
     -c defaults rapids=0.16 python=3.7 cudatoolkit=10.1
 ```
 
-Depending on a user's config (e.g. having `channel_priority: strict` in `.condarc`), this may not work even in a clean environment. If one would add the `pytorch` channel as well, for users that need both PyTorch and RAPIDS, it's even less likely to work - the conda solver cannot handle that many channels and will fail to find a solution.
+Depending on a user's config (e.g. having `channel_priority: strict` in
+`.condarc`), this may not work even in a clean environment. If one would add
+the `pytorch` channel as well, for users that need both PyTorch and RAPIDS,
+it's even less likely to work - the conda solver cannot handle that many
+channels and will fail to find a solution.
 
 
 ### Cudatoolkit
@@ -345,13 +354,24 @@ exception is difficult to obtain. Therefore it should not be added to the
 
 ### PyPI, pip and wheels
 
-The experience installing PyTorch with `pip` is suboptimal, mainly because there's no way to control CUDA versions via `pip`, so the user gets whatever the default CUDA version is (10.2 at the time of writing) when running `pip install torch`. In case the user needs a different CUDA version or the CPU-only package, the install instruction looks like:
+The experience installing PyTorch with `pip` is suboptimal, mainly because
+there's no way to control CUDA versions via `pip`, so the user gets whatever
+the default CUDA version is (10.2 at the time of writing) when running `pip
+install torch`. In case the user needs a different CUDA version or the
+CPU-only package, the install instruction looks like:
 ```
 pip install torch==1.7.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html
 ```
-There's the [pytorch-pip-shim](https://github.com/pmeier/pytorch-pip-shim) tool to handle auto-detecting CUDA versions and retrieving the right wheel. It relies on monkeypatching pip though, so it may break when new versions of pip are released.
+There's the [pytorch-pip-shim](https://github.com/pmeier/pytorch-pip-shim)
+tool to handle auto-detecting CUDA versions and retrieving the right wheel.
+It relies on monkeypatching pip though, so it may break when new versions of
+pip are released.
 
-For package authors wanting to add a dependency on PyTorch, the above usability issue is a serious problem. If they add a runtime dependency on PyTorch (via `install_requires` in `setup.py` or via `pyproject.toml`), the only thing they can add is `torch` and there's no good way of signalling to the user that there's a CUDA version issue or how to deal with it.
+For package authors wanting to add a dependency on PyTorch, the above
+usability issue is a serious problem. If they add a runtime dependency on
+PyTorch (via `install_requires` in `setup.py` or via `pyproject.toml`), the
+only thing they can add is `torch` and there's no good way of signalling to
+the user that there's a CUDA version issue or how to deal with it.
 
 Finally note that `pip` and `conda` work together reasonably well, so for
 package authors that want to release packages that _do not contain C++ or
