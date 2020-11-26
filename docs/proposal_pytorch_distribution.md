@@ -240,11 +240,14 @@ for details (and issues).
 
 Advantages of this alternative are:
 
-- Conda-forge already has a lot of packages, and there are established tools
-  and processes for adding and updating them. Which means it's less likely
-  for there to be issues with dependencies (e.g. packages with many or
-  unusual dependencies may not be accepted into the `pytorch` channel, while
-  `conda-forge` will be fine with them).
+- Conda-forge has a lot of packages, so it will be easier to install PyTorch
+  in combination with other non-deep learning packages (e.g. the geo-science
+  stack).
+- Conda-forge already has established tools and processes for adding and
+  updating them. Which means it's less likely for there to be issues with
+  dependencies (e.g. packages with many or unusual dependencies may not be
+  accepted into the `pytorch` channel, while `conda-forge` will be fine with
+  them).
 - Users are likely already familiar with using the `conda-forge` channel.
 
 Disadvantages of this alternative are:
@@ -253,13 +256,46 @@ Disadvantages of this alternative are:
   possible using CUDA stubs, however testing cannot really be done inside CI,
   only manually (which is a pain, especially when having to test multiple
   hardware and OS platforms).
-- Conda-forge uses a single compiler toolchain for all packages it builds for
-  a given platform. Currently that is known to work with PyTorch on Linux,
-  and unknown (but likely works) on other platforms. That's not guaranteed to
-  always remain the case though; conda-forge compilers are typically fairly
-  old (to stay roughly in sync with `defaults`, which considers HPC use cases
-  with older CentOS releases), while PyTorch may have the need to start
-  requiring a newer compiler at some point. This would be a serious problem.
+  _Note that there are packages that follow this approach (mostly without
+  problems so far), for example `arrow-cpp` and `cupy`. To obtain a full list of packages, clone https://github.com/conda-forge/feedstocks and run
+  `grep 'compiler(' feedstocks/*/meta.yaml | grep cuda`._
+- `conda-forge` and `defaults` aren't guaranteed to be compatible, so
+  standardizing on `conda-forge` may cause problems for people who prefer
+  `defaults`.
+- Exotic hardware support may be difficult. PyTorch has support for TPUs (via
+  XLA), AMD ROCm, Linux on ARM64, Vulkan, Metal, Android NNAPI - this list
+  will continue to grow. Most of this is experimental and hence not present
+  in official binaries (and/or in the C++/Java packages which aren't
+  distributed with conda), but this is likely to change and present issues
+  with compilers or dependencies not present in conda-forge.
+  For more details, see [this comment by Soumith](https://github.com/conda-forge/pytorch-cpu-feedstock/issues/7#issuecomment-538253388).
+- Release coordination is more difficult. For a PyTorch release, packages for
+  `pytorch`, `torchvision`, `torchtext`, `torchaudio` will all be built
+  together and then released. There may be manual quality assurance steps
+  before uploading the packages.
+  Building a set of packages like that depend on each other and releasing
+  them in a coordinated fashion is hard to do on conda-forge, given that if
+  everything is in feedstocks, the new pytorch package must already be
+  available before the next build can start. It may be possible to do this
+  with channel labels (build sequentially, then move all packages to the
+  `main` label at once), but either way all the released artifacts will be
+  publicly visible before the official release.
+
+Other points:
+
+- If the PyTorch team does not package for conda-forge, someone else will do
+  that at some point.
+- Conda-forge no longer uses a single compiler toolchain for all packages it
+  builds for a given platform - it is now possible to use a newer compiler,
+  which itself is built with an older glibc/binutils (that does need to be
+  common). See
+  [this example](https://github.com/conda-forge/omniscidb-feedstock/blob/master/recipe/conda_build_config.yaml)
+  for how to specify using GCC 8. So not having a recent enough compiler
+  available is unlikely to be a relevant concern.
+- Mirroring packages in the `pytorch` channel to the `conda-forge` channel
+  would alleviate worries about the disadvantages here, however there's no
+  conda-forge tooling currently to verify ABI compatibility of the packages,
+  which is the main worry of the conda-forge team with this approach.
 
 
 ### DIY for every package
